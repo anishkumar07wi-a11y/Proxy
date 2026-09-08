@@ -1,14 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { isCurrentUserAdmin } from '@/lib/supabase-server';
+import { NextResponse } from 'next/server';
+import { getSupabaseServerClient, isCurrentUserAdmin } from '@/lib/supabase-server';
 
-export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const email = searchParams.get('email');
-
-  if (!email) {
-    return NextResponse.json({ isAdmin: false }, { status: 400 });
+export async function GET() {
+  try {
+    const supabase = await getSupabaseServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    const isAdmin = !!user?.email && await isCurrentUserAdmin(user.email);
+    return NextResponse.json({ isAdmin });
+  } catch {
+    return NextResponse.json({ isAdmin: false }, { status: 200 });
   }
-
-  const isAdmin = await isCurrentUserAdmin(email);
-  return NextResponse.json({ isAdmin });
 }
